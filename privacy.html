@@ -56,8 +56,8 @@
     ul { margin: 10px 0 12px 20px; color: #a8b4c8; font-size: 0.95rem; }
     ul li { margin-bottom: 6px; }
 
-    .ru { display: block; }
-    .en { display: none; }
+    .lang-en .ru { display: none; }
+    .lang-ru .en { display: none; }
 
     footer {
       text-align: center;
@@ -68,7 +68,7 @@
     }
   </style>
 </head>
-<body>
+<body class="lang-ru">
 
 <nav>
   <div>
@@ -204,8 +204,7 @@
 
 <script>
   function setLang(lang) {
-    document.querySelectorAll('.ru').forEach(el => el.style.display = lang === 'ru' ? '' : 'none');
-    document.querySelectorAll('.en').forEach(el => el.style.display = lang === 'en' ? '' : 'none');
+    document.body.className = 'lang-' + lang;
     document.querySelectorAll('.lang-btn').forEach((btn, i) => {
       btn.classList.toggle('active', (i === 0 && lang === 'ru') || (i === 1 && lang === 'en'));
     });

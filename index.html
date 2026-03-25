@@ -152,15 +152,15 @@
     }
     .lang-btn:hover, .lang-btn.active { background: rgba(255,255,255,0.2); }
 
-    .ru { display: block; }
-    .en { display: none; }
+    .lang-en .ru { display: none; }
+    .lang-ru .en { display: none; }
 
     @media (max-width: 480px) {
       header h1 { font-size: 1.8rem; }
     }
   </style>
 </head>
-<body>
+<body class="lang-ru">
 
 <div style="position:relative">
   <header>
@@ -252,8 +252,7 @@
 
 <script>
   function setLang(lang) {
-    document.querySelectorAll('.ru').forEach(el => el.style.display = lang === 'ru' ? '' : 'none');
-    document.querySelectorAll('.en').forEach(el => el.style.display = lang === 'en' ? '' : 'none');
+    document.body.className = 'lang-' + lang;
     document.querySelectorAll('.lang-btn').forEach((btn, i) => {
       btn.classList.toggle('active', (i === 0 && lang === 'ru') || (i === 1 && lang === 'en'));
     });
