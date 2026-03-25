@@ -5,257 +5,850 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MusicNewsBot — музыкальные релизы в Telegram</title>
   <style>
+    :root {
+      --bg: #0a0a10;
+      --bg2: #0f0f18;
+      --card: #13131f;
+      --border: #1e1e30;
+      --blue: #2481cc;
+      --blue-light: #4a9eff;
+      --text: #e0e0f0;
+      --muted: #7a8099;
+    }
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: #0f0f13;
-      color: #e8e8e8;
+      background: var(--bg);
+      color: var(--text);
       line-height: 1.7;
+      overflow-x: hidden;
     }
-    a { color: #7c9ef8; text-decoration: none; }
+    a { color: var(--blue-light); text-decoration: none; }
     a:hover { text-decoration: underline; }
 
-    header {
-      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-      padding: 80px 20px 60px;
-      text-align: center;
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      background: rgba(10,10,16,0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
     }
-    header .logo {
-      font-size: 64px;
-      margin-bottom: 16px;
-    }
-    header h1 {
-      font-size: 2.4rem;
-      font-weight: 700;
-      color: #ffffff;
-      margin-bottom: 12px;
-    }
-    header p {
-      font-size: 1.15rem;
-      color: #a0b4d6;
-      max-width: 520px;
-      margin: 0 auto 32px;
-    }
-    .btn {
-      display: inline-block;
-      background: #2481cc;
+    .nav-logo { font-weight: 700; color: #fff; font-size: 1rem; display: flex; align-items: center; gap: 8px; }
+    .nav-logo span { font-size: 20px; }
+    .nav-right { display: flex; align-items: center; gap: 16px; }
+    .nav-link { color: var(--muted); font-size: 0.88rem; transition: color 0.2s; }
+    .nav-link:hover { color: #fff; text-decoration: none; }
+    .nav-btn {
+      background: var(--blue);
       color: #fff;
-      padding: 14px 32px;
+      padding: 8px 18px;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .nav-btn:hover { background: var(--blue-light); text-decoration: none; transform: translateY(-1px); }
+    .lang-switch { display: flex; gap: 6px; }
+    .lang-btn {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: var(--muted);
+      padding: 5px 11px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: all 0.2s;
+    }
+    .lang-btn:hover, .lang-btn.active { background: rgba(255,255,255,0.15); color: #fff; }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 120px 20px 80px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% 0%, rgba(36,129,204,0.18) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 40% at 80% 80%, rgba(120,60,200,0.1) 0%, transparent 60%);
+    }
+    .hero-particles {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+    .particle {
+      position: absolute;
+      font-size: 20px;
+      opacity: 0;
+      animation: float linear infinite;
+    }
+    @keyframes float {
+      0%   { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+      5%   { opacity: 0.4; }
+      95%  { opacity: 0.4; }
+      100% { transform: translateY(-10vh) rotate(360deg); opacity: 0; }
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(36,129,204,0.15);
+      border: 1px solid rgba(36,129,204,0.3);
+      border-radius: 100px;
+      padding: 6px 16px;
+      font-size: 0.82rem;
+      color: var(--blue-light);
+      margin-bottom: 28px;
+      position: relative;
+    }
+    .hero-badge::before {
+      content: '';
+      width: 6px; height: 6px;
+      background: var(--blue-light);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+    .hero h1 {
+      font-size: clamp(2.2rem, 6vw, 3.8rem);
+      font-weight: 800;
+      color: #fff;
+      line-height: 1.15;
+      margin-bottom: 20px;
+      position: relative;
+      letter-spacing: -0.02em;
+    }
+    .hero h1 .accent {
+      background: linear-gradient(135deg, var(--blue-light), #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero p {
+      font-size: 1.15rem;
+      color: var(--muted);
+      max-width: 520px;
+      margin: 0 auto 36px;
+      position: relative;
+    }
+    .hero-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; position: relative; }
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--blue);
+      color: #fff;
+      padding: 14px 28px;
       border-radius: 10px;
       font-size: 1rem;
       font-weight: 600;
-      transition: background 0.2s;
+      transition: all 0.2s;
     }
-    .btn:hover { background: #1a6aad; text-decoration: none; }
-
-    section {
-      max-width: 860px;
-      margin: 0 auto;
-      padding: 60px 20px;
+    .btn-primary:hover { background: var(--blue-light); text-decoration: none; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(36,129,204,0.3); }
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: #fff;
+      padding: 14px 28px;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      transition: all 0.2s;
     }
-    section h2 {
-      font-size: 1.7rem;
-      font-weight: 700;
-      color: #ffffff;
-      margin-bottom: 32px;
-      text-align: center;
-    }
-
-    .features {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 24px;
-    }
-    .feature-card {
-      background: #1a1a2a;
-      border: 1px solid #2a2a3e;
-      border-radius: 14px;
-      padding: 28px 24px;
-    }
-    .feature-card .icon { font-size: 36px; margin-bottom: 14px; }
-    .feature-card h3 { font-size: 1.05rem; font-weight: 600; color: #fff; margin-bottom: 8px; }
-    .feature-card p { font-size: 0.9rem; color: #9099b0; }
-
-    .how-it-works ol {
-      list-style: none;
-      counter-reset: steps;
+    .btn-secondary:hover { background: rgba(255,255,255,0.12); text-decoration: none; transform: translateY(-2px); }
+    .hero-scroll {
+      position: absolute;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: var(--muted);
+      font-size: 0.8rem;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      align-items: center;
+      gap: 6px;
+      animation: bounce 2s infinite;
     }
-    .how-it-works li {
-      counter-increment: steps;
+    @keyframes bounce {
+      0%, 100% { transform: translateX(-50%) translateY(0); }
+      50% { transform: translateX(-50%) translateY(6px); }
+    }
+    .scroll-arrow { font-size: 18px; }
+
+    /* ── STATS ── */
+    .stats-bar {
+      background: var(--card);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 32px 20px;
+    }
+    .stats-inner {
+      max-width: 860px;
+      margin: 0 auto;
       display: flex;
-      align-items: flex-start;
-      gap: 16px;
-      background: #1a1a2a;
-      border: 1px solid #2a2a3e;
-      border-radius: 12px;
-      padding: 20px 24px;
+      justify-content: center;
+      gap: 60px;
+      flex-wrap: wrap;
     }
-    .how-it-works li::before {
-      content: counter(steps);
-      background: #2481cc;
+    .stat { text-align: center; }
+    .stat-num { font-size: 2rem; font-weight: 800; color: #fff; }
+    .stat-num .accent { color: var(--blue-light); }
+    .stat-label { font-size: 0.82rem; color: var(--muted); margin-top: 2px; }
+
+    /* ── SECTIONS ── */
+    .section {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 80px 20px;
+    }
+    .section-alt {
+      background: var(--bg2);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    .section-alt .section { padding: 80px 20px; }
+    .section-tag {
+      display: inline-block;
+      background: rgba(36,129,204,0.12);
+      border: 1px solid rgba(36,129,204,0.25);
+      color: var(--blue-light);
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 100px;
+      margin-bottom: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .section-title {
+      font-size: clamp(1.6rem, 4vw, 2.2rem);
+      font-weight: 800;
       color: #fff;
-      font-weight: 700;
-      min-width: 32px;
-      height: 32px;
+      margin-bottom: 12px;
+      line-height: 1.2;
+    }
+    .section-sub {
+      font-size: 1rem;
+      color: var(--muted);
+      margin-bottom: 48px;
+      max-width: 560px;
+    }
+
+    /* ── FEATURES ── */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+    }
+    .feature-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px 24px;
+      transition: all 0.3s;
+      cursor: default;
+      position: relative;
+      overflow: hidden;
+    }
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--blue), #a78bfa);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .feature-card:hover {
+      border-color: rgba(74,158,255,0.3);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.3);
+    }
+    .feature-card:hover::before { opacity: 1; }
+    .feature-icon {
+      width: 48px; height: 48px;
+      background: rgba(36,129,204,0.15);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      margin-bottom: 18px;
+    }
+    .feature-card h3 { font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: 8px; }
+    .feature-card p { font-size: 0.88rem; color: var(--muted); line-height: 1.6; }
+
+    /* ── HOW IT WORKS ── */
+    .steps { display: flex; flex-direction: column; gap: 0; }
+    .step {
+      display: flex;
+      gap: 24px;
+      align-items: flex-start;
+      position: relative;
+      padding-bottom: 32px;
+    }
+    .step:last-child { padding-bottom: 0; }
+    .step-left { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+    .step-num {
+      width: 44px; height: 44px;
+      background: linear-gradient(135deg, var(--blue), #5b6ef8);
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.9rem;
-      flex-shrink: 0;
-    }
-    .how-it-works li span { color: #c8d0e0; font-size: 0.95rem; }
-
-    .services {
-      display: flex;
-      gap: 16px;
-      justify-content: center;
-      flex-wrap: wrap;
-    }
-    .service-badge {
-      background: #1a1a2a;
-      border: 1px solid #2a2a3e;
-      border-radius: 10px;
-      padding: 14px 22px;
-      font-size: 0.95rem;
-      color: #c8d0e0;
-    }
-
-    footer {
-      border-top: 1px solid #1e1e2e;
-      text-align: center;
-      padding: 32px 20px;
-      color: #555;
-      font-size: 0.85rem;
-    }
-    footer a { color: #666; }
-
-    .lang-switch {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      display: flex;
-      gap: 8px;
-    }
-    .lang-btn {
-      background: rgba(255,255,255,0.1);
-      border: 1px solid rgba(255,255,255,0.2);
+      font-size: 1rem;
+      font-weight: 800;
       color: #fff;
-      padding: 6px 14px;
-      border-radius: 6px;
+      flex-shrink: 0;
+      box-shadow: 0 0 0 4px rgba(36,129,204,0.15);
+    }
+    .step-line {
+      width: 2px;
+      flex: 1;
+      background: linear-gradient(to bottom, rgba(36,129,204,0.4), transparent);
+      margin-top: 8px;
+      min-height: 40px;
+    }
+    .step:last-child .step-line { display: none; }
+    .step-content {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px 24px;
+      flex: 1;
+      transition: border-color 0.3s;
+    }
+    .step-content:hover { border-color: rgba(74,158,255,0.25); }
+    .step-content h3 { font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: 6px; }
+    .step-content p { font-size: 0.88rem; color: var(--muted); }
+
+    /* ── SERVICES ── */
+    .services-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 16px;
+    }
+    .service-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px 20px;
+      text-align: center;
+      transition: all 0.3s;
+      cursor: default;
+    }
+    .service-card:hover {
+      border-color: rgba(74,158,255,0.3);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    }
+    .service-icon { font-size: 32px; margin-bottom: 10px; }
+    .service-name { font-size: 0.9rem; font-weight: 600; color: #fff; }
+    .service-status {
+      display: inline-block;
+      margin-top: 8px;
+      font-size: 0.72rem;
+      padding: 2px 8px;
+      border-radius: 100px;
+      background: rgba(74,158,255,0.12);
+      color: var(--blue-light);
+    }
+
+    /* ── FAQ ── */
+    .faq { display: flex; flex-direction: column; gap: 12px; }
+    .faq-item {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .faq-q {
+      padding: 18px 20px;
+      font-weight: 600;
+      color: #fff;
       cursor: pointer;
-      font-size: 0.85rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      user-select: none;
+      font-size: 0.95rem;
       transition: background 0.2s;
     }
-    .lang-btn:hover, .lang-btn.active { background: rgba(255,255,255,0.2); }
+    .faq-q:hover { background: rgba(255,255,255,0.03); }
+    .faq-arrow { transition: transform 0.3s; color: var(--muted); flex-shrink: 0; }
+    .faq-item.open .faq-arrow { transform: rotate(180deg); }
+    .faq-a {
+      padding: 0 20px;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.35s ease, padding 0.35s ease;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.7;
+    }
+    .faq-item.open .faq-a { max-height: 200px; padding: 0 20px 18px; }
 
+    /* ── CTA ── */
+    .cta-section {
+      text-align: center;
+      padding: 80px 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    .cta-section::before {
+      content: '';
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 600px; height: 300px;
+      background: radial-gradient(ellipse, rgba(36,129,204,0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .cta-section h2 { font-size: clamp(1.6rem, 4vw, 2.2rem); font-weight: 800; color: #fff; margin-bottom: 14px; position: relative; }
+    .cta-section p { color: var(--muted); margin-bottom: 32px; max-width: 480px; margin-left: auto; margin-right: auto; position: relative; }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 32px 20px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+    footer a { color: #555; }
+    footer a:hover { color: var(--muted); }
+
+    /* ── ANIMATIONS ── */
+    .fade-up {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+    .fade-up.visible { opacity: 1; transform: translateY(0); }
+    .fade-up.delay-1 { transition-delay: 0.1s; }
+    .fade-up.delay-2 { transition-delay: 0.2s; }
+    .fade-up.delay-3 { transition-delay: 0.3s; }
+    .fade-up.delay-4 { transition-delay: 0.4s; }
+
+    /* ── LANG ── */
     .lang-en .ru { display: none; }
     .lang-ru .en { display: none; }
 
-    @media (max-width: 480px) {
-      header h1 { font-size: 1.8rem; }
+    /* ── MOBILE ── */
+    @media (max-width: 600px) {
+      .nav-link { display: none; }
+      .stats-inner { gap: 32px; }
+      .step { gap: 16px; }
     }
   </style>
 </head>
 <body class="lang-ru">
 
-<div style="position:relative">
-  <header>
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">
+    <span>🎵</span> MusicNewsBot
+  </div>
+  <div class="nav-right">
+    <a href="#features" class="nav-link ru">Возможности</a>
+    <a href="#features" class="nav-link en">Features</a>
+    <a href="#services" class="nav-link ru">Сервисы</a>
+    <a href="#services" class="nav-link en">Services</a>
+    <a href="#faq" class="nav-link ru">FAQ</a>
+    <a href="#faq" class="nav-link en">FAQ</a>
     <div class="lang-switch">
       <button class="lang-btn active" onclick="setLang('ru')">RU</button>
       <button class="lang-btn" onclick="setLang('en')">EN</button>
     </div>
-    <div class="logo">🎵</div>
-    <h1>MusicNewsBot</h1>
-    <p class="ru">Музыкальные релизы с ваших любимых блогов и сайтов — прямо в Telegram</p>
-    <p class="en">Music releases from your favourite blogs and sites — delivered to Telegram</p>
-    <a class="btn" href="https://t.me/ravengris_musicnews_bot">
+    <a class="nav-btn" href="https://t.me/ravengris_musicnews_bot">
+      <span class="ru">Открыть</span><span class="en">Open</span>
+    </a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-particles" id="particles"></div>
+
+  <div class="hero-badge ru">Telegram-бот для меломанов</div>
+  <div class="hero-badge en">Telegram bot for music lovers</div>
+
+  <h1>
+    <span class="ru">Все новые релизы —<br><span class="accent">прямо в Telegram</span></span>
+    <span class="en">New releases —<br><span class="accent">right in Telegram</span></span>
+  </h1>
+
+  <p class="ru">Бот следит за вашими любимыми музыкальными блогами, фильтрует по жанрам и автоматически добавляет альбомы в ваш стриминг-плейлист.</p>
+  <p class="en">The bot monitors your favourite music blogs, filters by genre, and automatically adds albums to your streaming playlist.</p>
+
+  <div class="hero-btns">
+    <a class="btn-primary" href="https://t.me/ravengris_musicnews_bot">
+      <span>✈</span>
       <span class="ru">Открыть в Telegram</span>
       <span class="en">Open in Telegram</span>
     </a>
-  </header>
+    <a class="btn-secondary" href="#how-it-works">
+      <span class="ru">Как это работает</span>
+      <span class="en">How it works</span>
+    </a>
+  </div>
+
+  <div class="hero-scroll">
+    <div class="scroll-arrow">↓</div>
+  </div>
+</section>
+
+<!-- STATS -->
+<div class="stats-bar">
+  <div class="stats-inner">
+    <div class="stat fade-up">
+      <div class="stat-num"><span class="accent" data-target="5">0</span>+</div>
+      <div class="stat-label ru">стриминг-сервисов</div>
+      <div class="stat-label en">streaming services</div>
+    </div>
+    <div class="stat fade-up delay-1">
+      <div class="stat-num"><span class="accent" data-target="100">0</span>+</div>
+      <div class="stat-label ru">жанров</div>
+      <div class="stat-label en">genres</div>
+    </div>
+    <div class="stat fade-up delay-2">
+      <div class="stat-num"><span class="accent">∞</span></div>
+      <div class="stat-label ru">источников</div>
+      <div class="stat-label en">custom sources</div>
+    </div>
+    <div class="stat fade-up delay-3">
+      <div class="stat-num"><span class="accent">24</span>/7</div>
+      <div class="stat-label ru">мониторинг</div>
+      <div class="stat-label en">monitoring</div>
+    </div>
+  </div>
 </div>
 
-<section>
-  <h2 class="ru">Что умеет бот</h2>
-  <h2 class="en">Features</h2>
-  <div class="features">
-    <div class="feature-card">
-      <div class="icon">📰</div>
-      <h3 class="ru">Свои источники</h3>
-      <h3 class="en">Custom sources</h3>
-      <p class="ru">Добавляйте любые музыкальные блоги и сайты — бот будет следить за ними автоматически.</p>
-      <p class="en">Add any music blogs and websites — the bot monitors them automatically.</p>
-    </div>
-    <div class="feature-card">
-      <div class="icon">🎛️</div>
-      <h3 class="ru">Фильтр по жанрам</h3>
-      <h3 class="en">Genre filter</h3>
-      <p class="ru">Выбирайте интересующие жанры и получайте только релевантные релизы.</p>
-      <p class="en">Choose your genres and receive only relevant releases.</p>
-    </div>
-    <div class="feature-card">
-      <div class="icon">🔗</div>
-      <h3 class="ru">Стриминги</h3>
-      <h3 class="en">Streaming services</h3>
-      <p class="ru">Подключите YouTube Music, Tidal или VK Music — бот автоматически добавит альбомы в плейлист.</p>
-      <p class="en">Connect YouTube Music, Tidal or VK Music — the bot adds albums to your playlist automatically.</p>
-    </div>
-    <div class="feature-card">
-      <div class="icon">⏰</div>
-      <h3 class="ru">Расписание</h3>
-      <h3 class="en">Scheduled delivery</h3>
-      <p class="ru">Настройте время и часовой пояс — дайджест будет приходить когда удобно вам.</p>
-      <p class="en">Set a time and timezone — your digest arrives when it suits you.</p>
+<!-- FEATURES -->
+<div id="features">
+  <div class="section">
+    <div class="section-tag ru">Возможности</div>
+    <div class="section-tag en">Features</div>
+    <h2 class="section-title ru fade-up">Всё что нужно меломану</h2>
+    <h2 class="section-title en fade-up">Everything a music lover needs</h2>
+    <p class="section-sub ru fade-up delay-1">Бот делает всю рутину за вас — от сбора новостей до добавления в плейлист.</p>
+    <p class="section-sub en fade-up delay-1">The bot handles all the routine for you — from collecting news to adding to your playlist.</p>
+
+    <div class="features-grid">
+      <div class="feature-card fade-up">
+        <div class="feature-icon">📰</div>
+        <h3 class="ru">Свои источники</h3>
+        <h3 class="en">Custom sources</h3>
+        <p class="ru">Добавляйте любые музыкальные блоги и сайты — бот автоматически сканирует их на новые релизы.</p>
+        <p class="en">Add any music blogs and websites — the bot automatically scans them for new releases.</p>
+      </div>
+      <div class="feature-card fade-up delay-1">
+        <div class="feature-icon">🤖</div>
+        <h3 class="ru">ИИ-анализ</h3>
+        <h3 class="en">AI analysis</h3>
+        <p class="ru">Gemini AI извлекает метаданные альбомов — исполнитель, название, жанр — из текстов статей.</p>
+        <p class="en">Gemini AI extracts album metadata — artist, title, genre — from article text.</p>
+      </div>
+      <div class="feature-card fade-up delay-2">
+        <div class="feature-icon">🎛️</div>
+        <h3 class="ru">Фильтр по жанрам</h3>
+        <h3 class="en">Genre filter</h3>
+        <p class="ru">Выбирайте интересующие жанры — получайте только то, что хотите слушать.</p>
+        <p class="en">Choose your genres — receive only what you want to listen to.</p>
+      </div>
+      <div class="feature-card fade-up delay-3">
+        <div class="feature-icon">🎵</div>
+        <h3 class="ru">Авто-плейлист</h3>
+        <h3 class="en">Auto-playlist</h3>
+        <p class="ru">Подключите стриминг — каждый новый релиз автоматически появится в вашем плейлисте.</p>
+        <p class="en">Connect streaming — every new release automatically appears in your playlist.</p>
+      </div>
+      <div class="feature-card fade-up">
+        <div class="feature-icon">⏰</div>
+        <h3 class="ru">Расписание</h3>
+        <h3 class="en">Scheduled delivery</h3>
+        <p class="ru">Настройте удобное время и часовой пояс — дайджест придёт точно по расписанию.</p>
+        <p class="en">Set a convenient time and timezone — the digest will arrive right on schedule.</p>
+      </div>
+      <div class="feature-card fade-up delay-1">
+        <div class="feature-icon">🌐</div>
+        <h3 class="ru">Пресет-источники</h3>
+        <h3 class="en">Preset sources</h3>
+        <p class="ru">Не знаете с чего начать? Выбирайте из готовых популярных источников одним нажатием.</p>
+        <p class="en">Don't know where to start? Choose from ready-made popular sources with one tap.</p>
+      </div>
     </div>
   </div>
-</section>
+</div>
 
-<section class="how-it-works" style="background:#111118; max-width:100%; padding:60px 20px;">
-  <div style="max-width:860px; margin:0 auto;">
-    <h2 class="ru">Как это работает</h2>
-    <h2 class="en">How it works</h2>
-    <ol>
-      <li><span class="ru">Вы добавляете ссылки на музыкальные сайты и блоги, которые читаете.</span><span class="en">You add links to the music sites and blogs you follow.</span></li>
-      <li><span class="ru">Бот автоматически сканирует их и извлекает информацию о новых релизах с помощью ИИ.</span><span class="en">The bot scans them automatically and uses AI to extract information about new releases.</span></li>
-      <li><span class="ru">Вы получаете подборку в Telegram, отфильтрованную по вашим жанровым предпочтениям.</span><span class="en">You receive a curated selection in Telegram, filtered by your genre preferences.</span></li>
-      <li><span class="ru">Если подключён стриминг — треки сразу появляются в вашем плейлисте.</span><span class="en">If a streaming service is connected — tracks are added to your playlist right away.</span></li>
-    </ol>
+<!-- HOW IT WORKS -->
+<div class="section-alt" id="how-it-works">
+  <div class="section">
+    <div class="section-tag ru">Как это работает</div>
+    <div class="section-tag en">How it works</div>
+    <h2 class="section-title ru fade-up">Четыре шага до нового альбома</h2>
+    <h2 class="section-title en fade-up">Four steps to a new album</h2>
+    <p class="section-sub ru fade-up delay-1">Настройте бот один раз — дальше он работает сам.</p>
+    <p class="section-sub en fade-up delay-1">Set up the bot once — it works on its own from there.</p>
+
+    <div class="steps">
+      <div class="step fade-up">
+        <div class="step-left">
+          <div class="step-num">1</div>
+          <div class="step-line"></div>
+        </div>
+        <div class="step-content">
+          <h3 class="ru">Добавьте источники</h3>
+          <h3 class="en">Add sources</h3>
+          <p class="ru">Вставьте ссылки на любимые музыкальные сайты и блоги или выберите из пресетов.</p>
+          <p class="en">Paste links to your favourite music sites and blogs, or choose from presets.</p>
+        </div>
+      </div>
+      <div class="step fade-up delay-1">
+        <div class="step-left">
+          <div class="step-num">2</div>
+          <div class="step-line"></div>
+        </div>
+        <div class="step-content">
+          <h3 class="ru">Настройте жанры и расписание</h3>
+          <h3 class="en">Set genres and schedule</h3>
+          <p class="ru">Выберите интересующие жанры и удобное время для получения дайджеста.</p>
+          <p class="en">Choose your genres and a convenient time to receive the digest.</p>
+        </div>
+      </div>
+      <div class="step fade-up delay-2">
+        <div class="step-left">
+          <div class="step-num">3</div>
+          <div class="step-line"></div>
+        </div>
+        <div class="step-content">
+          <h3 class="ru">Подключите стриминг (опционально)</h3>
+          <h3 class="en">Connect streaming (optional)</h3>
+          <p class="ru">Авторизуйтесь в YouTube Music, Tidal, VK Music, Яндекс Музыке или Сбер Звуке.</p>
+          <p class="en">Authorise with YouTube Music, Tidal, VK Music, Yandex Music or Sber Zvuk.</p>
+        </div>
+      </div>
+      <div class="step fade-up delay-3">
+        <div class="step-left">
+          <div class="step-num">4</div>
+          <div class="step-line"></div>
+        </div>
+        <div class="step-content">
+          <h3 class="ru">Получайте релизы</h3>
+          <h3 class="en">Receive releases</h3>
+          <p class="ru">Бот сам соберёт новости, обработает через ИИ и пришлёт подборку — треки сразу в плейлисте.</p>
+          <p class="en">The bot collects news, processes it through AI and sends a selection — tracks go straight to your playlist.</p>
+        </div>
+      </div>
+    </div>
   </div>
-</section>
+</div>
 
-<section>
-  <h2 class="ru">Поддерживаемые сервисы</h2>
-  <h2 class="en">Supported services</h2>
-  <div class="services">
-    <div class="service-badge">▶ YouTube Music</div>
-    <div class="service-badge">◈ Tidal</div>
-    <div class="service-badge">♪ VK Music</div>
+<!-- SERVICES -->
+<div id="services">
+  <div class="section">
+    <div class="section-tag ru">Интеграции</div>
+    <div class="section-tag en">Integrations</div>
+    <h2 class="section-title ru fade-up">Поддерживаемые сервисы</h2>
+    <h2 class="section-title en fade-up">Supported services</h2>
+    <p class="section-sub ru fade-up delay-1">Подключите любимый стриминг — треки будут добавляться автоматически.</p>
+    <p class="section-sub en fade-up delay-1">Connect your favourite streaming service — tracks will be added automatically.</p>
+
+    <div class="services-grid">
+      <div class="service-card fade-up">
+        <div class="service-icon">▶️</div>
+        <div class="service-name">YouTube Music</div>
+        <div class="service-status ru">Подключить</div>
+        <div class="service-status en">Connect</div>
+      </div>
+      <div class="service-card fade-up delay-1">
+        <div class="service-icon">◈</div>
+        <div class="service-name">Tidal</div>
+        <div class="service-status ru">Подключить</div>
+        <div class="service-status en">Connect</div>
+      </div>
+      <div class="service-card fade-up delay-2">
+        <div class="service-icon">🎵</div>
+        <div class="service-name">VK Music</div>
+        <div class="service-status ru">Подключить</div>
+        <div class="service-status en">Connect</div>
+      </div>
+      <div class="service-card fade-up delay-3">
+        <div class="service-icon">🎶</div>
+        <div class="service-name">Яндекс Музыка</div>
+        <div class="service-status ru">Подключить</div>
+        <div class="service-status en">Connect</div>
+      </div>
+      <div class="service-card fade-up delay-4">
+        <div class="service-icon">🔊</div>
+        <div class="service-name">Сбер Звук</div>
+        <div class="service-status ru">Подключить</div>
+        <div class="service-status en">Connect</div>
+      </div>
+    </div>
   </div>
-</section>
+</div>
 
+<!-- FAQ -->
+<div class="section-alt" id="faq">
+  <div class="section">
+    <div class="section-tag">FAQ</div>
+    <h2 class="section-title ru fade-up">Частые вопросы</h2>
+    <h2 class="section-title en fade-up">Frequently asked questions</h2>
+
+    <div class="faq">
+      <div class="faq-item fade-up">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          <span class="ru">Это бесплатно?</span>
+          <span class="en">Is it free?</span>
+          <span class="faq-arrow">▾</span>
+        </div>
+        <div class="faq-a">
+          <span class="ru">Есть бесплатный пробный период. После него доступна подписка за 100 Telegram Stars в месяц.</span>
+          <span class="en">There is a free trial period. After that, a subscription is available for 100 Telegram Stars per month.</span>
+        </div>
+      </div>
+      <div class="faq-item fade-up delay-1">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          <span class="ru">Какие сайты можно добавить?</span>
+          <span class="en">What websites can I add?</span>
+          <span class="faq-arrow">▾</span>
+        </div>
+        <div class="faq-a">
+          <span class="ru">Любые музыкальные блоги и медиа — Pitchfork, NME, The Wire, русскоязычные издания и личные блоги. Главное — чтобы сайт публиковал статьи о музыке.</span>
+          <span class="en">Any music blogs and media — Pitchfork, NME, The Wire, and personal blogs. The main requirement is that the site publishes articles about music.</span>
+        </div>
+      </div>
+      <div class="faq-item fade-up delay-2">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          <span class="ru">Как часто бот проверяет источники?</span>
+          <span class="en">How often does the bot check sources?</span>
+          <span class="faq-arrow">▾</span>
+        </div>
+        <div class="faq-a">
+          <span class="ru">По настроенному расписанию — вы выбираете время и частоту сами. Можно также запустить сбор вручную в любой момент.</span>
+          <span class="en">According to your configured schedule — you choose the time and frequency yourself. You can also trigger a manual collection at any time.</span>
+        </div>
+      </div>
+      <div class="faq-item fade-up delay-3">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          <span class="ru">Безопасно ли подключать стриминг?</span>
+          <span class="en">Is it safe to connect a streaming service?</span>
+          <span class="faq-arrow">▾</span>
+        </div>
+        <div class="faq-a">
+          <span class="ru">Да. Токены авторизации хранятся в зашифрованном виде. Бот только добавляет треки в плейлист — никаких других действий с аккаунтом не производится.</span>
+          <span class="en">Yes. Authorisation tokens are stored encrypted. The bot only adds tracks to your playlist — no other actions are performed on your account.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CTA -->
+<div class="cta-section">
+  <h2 class="ru fade-up">Начните слушать больше новой музыки</h2>
+  <h2 class="en fade-up">Start discovering more new music</h2>
+  <p class="ru fade-up delay-1">Бот уже следит за тысячами источников. Настройте под себя за 2 минуты.</p>
+  <p class="en fade-up delay-1">The bot is already monitoring thousands of sources. Set it up for yourself in 2 minutes.</p>
+  <a class="btn-primary fade-up delay-2" href="https://t.me/ravengris_musicnews_bot" style="display:inline-flex;">
+    <span>✈</span>
+    <span class="ru">Открыть в Telegram</span>
+    <span class="en">Open in Telegram</span>
+  </a>
+</div>
+
+<!-- FOOTER -->
 <footer>
   <p>
     <a href="privacy.html" class="ru">Политика конфиденциальности</a>
     <a href="privacy.html" class="en">Privacy Policy</a>
     &nbsp;·&nbsp;
-    <span class="ru">Вопросы: </span><span class="en">Contact: </span>
     <a href="mailto:ravengris@gmail.com">ravengris@gmail.com</a>
     &nbsp;·&nbsp;
     <a href="https://t.me/ravengris_musicnews_bot">Telegram</a>
   </p>
-  <p style="margin-top:10px;">© 2026 MusicNewsBot</p>
+  <p style="margin-top:8px;">© 2026 MusicNewsBot</p>
 </footer>
 
 <script>
+  // Lang
   function setLang(lang) {
     document.body.className = 'lang-' + lang;
     document.querySelectorAll('.lang-btn').forEach((btn, i) => {
       btn.classList.toggle('active', (i === 0 && lang === 'ru') || (i === 1 && lang === 'en'));
     });
+  }
+
+  // Particles
+  const notes = ['♪', '♫', '♬', '♩', '🎵', '🎶'];
+  const container = document.getElementById('particles');
+  for (let i = 0; i < 18; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.textContent = notes[Math.floor(Math.random() * notes.length)];
+    p.style.left = Math.random() * 100 + '%';
+    p.style.animationDuration = (12 + Math.random() * 16) + 's';
+    p.style.animationDelay = (Math.random() * 14) + 's';
+    p.style.fontSize = (14 + Math.random() * 16) + 'px';
+    container.appendChild(p);
+  }
+
+  // Scroll animations
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+
+  // Counters
+  function animateCounter(el) {
+    const target = +el.dataset.target;
+    const duration = 1200;
+    const step = target / (duration / 16);
+    let current = 0;
+    const timer = setInterval(() => {
+      current = Math.min(current + step, target);
+      el.textContent = Math.floor(current);
+      if (current >= target) clearInterval(timer);
+    }, 16);
+  }
+  const counterObserver = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting && e.target.dataset.target) {
+        animateCounter(e.target);
+        counterObserver.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.5 });
+  document.querySelectorAll('[data-target]').forEach(el => counterObserver.observe(el));
+
+  // FAQ
+  function toggleFaq(el) {
+    el.parentElement.classList.toggle('open');
   }
 </script>
 
